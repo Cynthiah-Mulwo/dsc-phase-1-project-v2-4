@@ -1,13 +1,4 @@
 # Phase 1 Project Description
-PHASE 1 PROJECT
-Final Project Submission
-
-    Student name: CYNTHIAH CHELIMO MULWO
-    Student pace: FULL TIME
-    Scheduled project review date/time:
-    Instructor name:
-    Blog post URL:
-
 
 ### Business Problem
 
@@ -25,27 +16,66 @@ In the folder `zippedData` are movie datasets from:
 
 given the above data, I used some of it for analysis and finally giving my reccomendations to Microsoft.
 
-### Tha data cleaning proccess
 
 some of the data was clean and complette while others had missing values and other charracters .
+### Importing the following libraries is important as they will be required in our data cleaning, data analysis and data visualization codes 
+import pandas as pd
+import sqlite
+import numpy as np
+import csv
+import matplotlib.pyplot as plt 
+% matplotlib inline
  
 ## BOM.MOVIE_GROSS.CSV
 
 This is a dataset containing movie titles, their domestic gross, their foreign gross, the studio and the year as columns
  
- since I wanted to use the foreign gross column , which wasnt written as integer as it had other characters, I had to ensure that it if in a numeric form, I added another column; Box office which was an addition of the domestic gross and foreign gross in each of the rows.
- #### data cleaning
-  The data cleaning process included checking for duplicates in the data and checking if any of the rows had missing data, Which I found none of those
+ ##### filter the dataset and base our analysis on the data with a domestic gross of above $100000000
+ df = df[df['domestic_gross'] > 100000000]
+ df
  
- #### data visualization
- 
- I checked for the most used studio using the code :
- df.studio.value_counts()
- 
- and I wanted my audience to visualize that data using a histogram . I therefore made one histogram for that, which showed BV as the most used studio.
- 
- I created a bar graph to see the relationship between studios and total film revenues
-From that i came to a conclusion that the most used studio, perfomed well in terms of giving a higher revenue than others
+##### since foreign gross is type object, we turn it to float and remove any letters or characters that might be present
+df['foreign_gross'].replace('\W', '', regex=True, inplace= True)
+df.foreign_gross = df.foreign_gross.astype(float)
+
+##### We should create another column;box office which is a sum of domestic gross and foreign gross in every row
+
+df['box_office'] =( df.domestic_gross) + (df.foreign_gross)
+df 
+
+### data cleaning
+##### checking if there are any duplicates
+df.duplicated().value_counts()
+
+##### checking for null values.NaNs return true while valid data returns false
+df.isna()
+##### the sum of null values
+df.isna().sum
+#### fill the missing data from domestic gross with its median
+median_domestic_gross = df['domestic_gross'].median()
+df['domestic_gross'] = df['domestic_gross'].fillna(median_domestic_gross)
+
+### data visualization
+##### check for the most used studios
+df.studio.value_counts()
+
+##### create a histogram to compare the most used studio visually
+
+fig, ax = plt.subplots(figsize = (20,8))
+ax.hist(df.studio, bins = 80)
+ax.set_xlabel('Names of studios')
+ax.set_ylabel('Number of times the studios have been used.')
+ax.set_title('Studio counts');
+
+
+
+##### lets create a bar graph to see the relationship between studios and total film revenues
+fig, ax = plt.subplots(figsize=(15,6))
+plt.bar( x= df.studio, height= df.box_office)
+plt.xlabel('Name of studios')
+plt.ylabel('box office in millions')
+plt.title('Relationship between Studios and total revenue from films')
+plt.show()
 
 ## MOVIES.CSV
 
@@ -53,15 +83,46 @@ This dataset contains the genre_id,id ,original_language ,original_title , popul
 
 #### data cleaning
 
- The data cleaning process included checking for duplicates and alco checking for the missing values in each column
-  and ensuring everything is fixed before its analysis
+##### The data cleaning process included checking for duplicates and alco checking for the missing values in each column
+  ##### and ensuring everything is fixed before its analysis
+ 
+
+  ##### check for duplicate
+  movies_df.duplicated().value_counts()
   
   #### data visualization
   after careful analysis, I declared English as the most used language by far abd to visualize that for my audience, I made a histogram to show the most used languages.
+  ##### check for the most used languages
+  movies_df.original_language.value_counts().head(15)
   
-  I also plotted a bar graphs to show the avarage votes in movies based on languages and several languages had good perfomance
-  
+ ##### lets plot a histogram for the most used language
+fig, ax = plt.subplots(figsize = (20,6))
+ax.hist(movies_df.original_language, bins = 80)
+ax.set_xlabel('languages')
+ax.set_ylabel('count')
+ax.set_title('most used languages');
+
+##### lets plot a bargraph showing the avarage votes based on languages
+
+fig, ax = plt.subplots(figsize=(20,8))
+plt.bar( x= movies_df.original_language, height=movies_df.vote_average)
+plt.xlabel('original languages')
+plt.ylabel('vote average')
+plt.title('average votes on different movie based on their languages')
+plt.show()
+
   ## IM.DB
+  
+  ##### executing the query
+cur.execute("""
+SELECT name
+FROM sqlite_master 
+WHERE type = 'table';
+
+""")
+##### fetching the results in tables
+table_names = cur.fetchall()
+table_names
   This dataset is an SQL dataset that contained the following tables :
   [('movie_basics',),
  ('directors',),
@@ -72,19 +133,75 @@ This dataset contains the genre_id,id ,original_language ,original_title , popul
  ('principals',),
  ('writers)
  
- I loaded the movie basics and the movie ratings as I was going to use them for my analysis
- 
-after loading and cleaning, I went ahead to plot two graphs, a scatter plot and a line plot to see the relationship between the avarage rating and number of votes
-I came to a solition that they are related as the most number of votes were at the good rating.
-I went ahead and loaded the genrws that were rated at 10 and plotted a graph of it . the documenraries had the best ratings
+
+#### to check the higher rated movies and their genres
+pd.DataFrame(
+data=cur.execute("""SELECT original_title,genres,averagerating
+FROM movie_basics
+JOIN movie_ratings
+ON movie_basics.movie_id = movie_ratings.movie_id
+ WHERE averagerating == 10
+ ORDER BY averagerating DESC
+ ;""").fetchall(),
+columns=[x[0] for x in cur.description]
+
+#### lets plot two graphs, a scatter plot and a line plot to see the relationship between the avarage rating and number of votes
+
+import pandas as pd
+import matplotlib.pyplot as plt  
+import seaborn as sns 
+movie_rate_and_votes.columns
+plt.figure(figsize=(10,6))
+sns.regplot(x=movie_rate_and_votes['averagerating'] , y=movie_rate_and_votes['numvotes'])
+
+movie_rate_and_votes.columns
+plt.figure(figsize=(10,6))
+sns.lineplot(x=movie_rate_and_votes['averagerating'] , y=movie_rate_and_votes['numvotes'])
+
+##### we loaded the most rated movie genres and plotted graph of it
+g="""SELECT original_title,genres,averagerating
+FROM movie_basics
+JOIN movie_ratings
+ON movie_basics.movie_id = movie_ratings.movie_id
+ WHERE averagerating == 10
+ ORDER BY averagerating DESC"""
+movie_rates=pd.read_sql(g,conn)
+
+movie_rates.columns
+plt.figure(figsize=(10,6))
+sns.barplot(x=movie_rates['genres'] , y=movie_rates['averagerating'])
+
+#### closing the connection
+conn.close
+
 
 ## MOVIE BUDGETS
 The csv file contained : the movie name , production budget,domestic gross and worldwide gross as their columns
 
-I loaded the data .
-My data cleaning included : to ensure that the data is workable with by removing all symbols and str
+### to ensure that the data is workablewith by removing all symbols and str
 
-I selected the data , whose worldwide gross was above $100000000 . 
-I used the data to check the corelation between production budget and the worldwide gross.
-The production budget and the worldwide gross has a very positive correltion: the more you spend on production, the more you get
+movie_budgets['worldwide_gross'] = movie_budgets['worldwide_gross'].str.replace('[$,]','')
+
+movie_budgets['worldwide_gross'] = movie_budgets['worldwide_gross'].astype(float)
+
+movie_budgets['production_budget'] = movie_budgets['production_budget'].str.replace('[$,]','')
+
+movie_budgets['production_budget'] = movie_budgets['production_budget'].astype(float)
+movie_budgets
+
+
+### lets select the data whose worldwode gross is above 100000000 to work with
+movie_budgets = movie_budgets[movie_budgets['worldwide_gross'] > 100000000]
+movie_budgets.head(10)
+
+
+### lets check the correlation between production budget and worldwide gross
+
+correlation = movie_budgets.corr()
+correlation. style. background_gradient (cmap = 'BrBG')
+
+### lets plot a graph to show us the correlation
+
+sns. heatmap (correlation, annot=True);
+
 
